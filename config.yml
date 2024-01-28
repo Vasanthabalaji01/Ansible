@@ -1,0 +1,64 @@
+
+- name: Update GitHub Repo
+  hosts: your_ec2_instance
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Clone the Repository
+      git:
+        repo: https://github.com/<yourusername>/basic-ansible-server-configuration.git
+        dest: /path/to/local/directory
+
+    - name: Update README.md
+      blockinfile:
+        path: /path/to/local/directory/README.md
+        insertafter: EOF
+        block: |
+        
+          - name: Basic Ansible Server Configuration
+            hosts: your_ec2_instance
+            become: true
+            gather_facts: true
+
+            tasks:
+              - name: Install Necessary Packages
+                yum:
+                  name: "{{ item }}"
+                  state: present
+                loop:
+                  - package1
+                  - package2
+
+              - name: Configure Users
+                user:
+                  name: "{{ item.name }}"
+                  state: present
+                  groups: "{{ item.groups }}"
+                  password: "{{ item.password | password_hash('sha512') }}"
+                loop:
+                  - { name: user1, groups: wheel, password: password1 }
+                  - { name: user2, groups: users, password: password2 }
+
+              - name: Set Up Web Server
+                become: true
+                yum:
+                  name: httpd
+                  state: present
+
+                systemd:
+                  name: httpd
+                  enabled: yes
+                  state: started
+
+                copy:
+                  content: "<html><body><h1>Welcome to My Website</h1></body></html>"
+                  dest: /var/www/html/index.html
+                  owner: apache
+                  group: apache
+                  mode: "0644"
+
+    - name: Commit and Push Changes
+      command: git add -A && git commit -m "Update README.md" && git push
+      args:
+        chdir: /path/to/local/directory
